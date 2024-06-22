@@ -14,10 +14,10 @@ jobs:
         id: export
         uses: corentinmusard/otel-cicd-action@v1
         env:
-          OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+          # OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
         with:
-          otlpEndpoint: "https://api.honeycomb.io"
-          otlpHeaders: "${{ secrets.OTLP_HEADERS }}"
+          otlpEndpoint: "grpc://api.honeycomb.io:443"
+          otlpHeaders: "${{ secrets.OTLP_HEADERS }},x-honeycomb-dataset=cicd"
           otelServiceName: cicd-observability-github-actions
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           runId: ${{ github.event.workflow_run.id }}
