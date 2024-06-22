@@ -23,8 +23,8 @@ jobs:
         uses: hiberbee/github-action-skaffold@1.27.0
         with:
           command: run
-          kubectl-version: v1.30.2
-          skaffold-version: v2.12.0
+          kubectl-version: 1.30.2
+          skaffold-version: 2.12.0
 
 
       - uses: inception-health/otel-upload-test-artifact-action@v1
