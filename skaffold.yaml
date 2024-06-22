@@ -1,0 +1,11 @@
+apiVersion: skaffold/v4beta9
+kind: Config
+metadata:
+  name: cicd-observability
+manifests:
+  rawYaml:
+    - deploy
+build:
+  artifacts:
+    - image: test-app
+      ko: {}

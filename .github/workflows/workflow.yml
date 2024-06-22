@@ -12,8 +12,19 @@ jobs:
           go-version-file: 'go.mod'
       - run: go version
       - run: go install github.com/jstemmer/go-junit-report/v2@latest
+
       - name: run tests
         run: go test -v 2>&1 ./... | go-junit-report -set-exit-code > report.xml
+
+      - name: setup k8s
+        uses: helm/kind-action@v1
+
+      - name: deploy
+        uses: hiberbee/github-action-skaffold@1.27.0
+        with:
+          command: run
+
+
       - uses: inception-health/otel-upload-test-artifact-action@v1
         if: always()
         with:
