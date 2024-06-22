@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Export Workflow Trace
         uses: corentinmusard/otel-cicd-action@v1
+        env:
+          OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
         with:
           otlpEndpoint: ${{ secrets.OTLP_ENDPOINT }}
           otlpHeaders: ${{ secrets.OTLP_HEADERS }}
