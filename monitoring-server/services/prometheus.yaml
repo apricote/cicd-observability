@@ -1,0 +1,5 @@
+systemd:
+  units:
+    - name: prometheus.service
+      enabled: true
+      contents: |

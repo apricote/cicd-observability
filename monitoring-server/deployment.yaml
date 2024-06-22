@@ -1,0 +1,37 @@
+variant: flatcar
+version: 1.1.0
+ignition: {}
+  # config:
+    # merge:
+      #- local: ./services/prometheus.yaml
+      #- local: ./services/loki.yaml
+      #- local: ./services/tempo.yaml
+      #- local: ./services/grafana.yaml
+      #- local: ./services/tailscale.yaml
+storage:
+  files:
+    - path: /etc/flatcar/enabled-sysext.conf
+      contents:
+        inline: |
+          podman
+
+    - path: /etc/containers/systemd/o11y.pod
+      contents:
+        inline: |
+          [Pod]
+          PodName=o11y
+
+    - path: /etc/containers/systemd/prometheus.service
+      contents:
+        inline: |
+          [Container]
+          Image=docker.io/prom/prometheus:v2.45.6
+          Mount=type=bind,source=/etc/prometheus/prometheus.yml,destination=/etc/prometheus/prometheus.yml,ro=true
+          Pod=o11y
+  links:
+    - path: /etc/extensions/docker-flatcar.raw
+      target: /dev/null
+      overwrite: true
+    - path: /etc/extensions/containerd-flatcar.raw
+      target: /dev/null
+      overwrite: true

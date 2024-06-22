@@ -1,0 +1,23 @@
+name: cicd-o11y
+on: push
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - run: go version
+      - run: go install github.com/jstemmer/go-junit-report/v2@latest
+      - name: run tests
+        run: go test -v 2>&1 ./... | go-junit-report -set-exit-code > report.xml
+      - uses: inception-health/otel-upload-test-artifact-action@v1
+        if: always()
+        with:
+          jobName: "tests"
+          stepName: "run tests"
+          path: "report.xml"
+          type: "junit"
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
