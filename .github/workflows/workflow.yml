@@ -26,6 +26,9 @@ jobs:
           kubectl-version: 1.30.2
           skaffold-version: 2.12.0
 
+      - run: kubectl create secret generic --from-literal=honeycomb-token=${{ secrets.HONEYCOMB_TOKEN }}
+
+      - run: sleep 60
 
       - uses: inception-health/otel-upload-test-artifact-action@v1
         if: always()

@@ -18,7 +18,7 @@ spec:
       containers:
         - name: test-app
           image: test-app
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 2112
               protocol: TCP
@@ -33,8 +33,10 @@ metadata:
   labels:
     app: test-app
 spec:
+  type: NodePort
   selector:
     app: test-app
   ports:
     - port: 2112
+      nodePort: 32112
       targetPort: 2112

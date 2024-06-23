@@ -1,0 +1,152 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: opentelemetry
+    component: otel-collector-conf
+data:
+  otel-collector-config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: "test-app"
+              scrape_interval: 5s
+              static_configs:
+                - targets:
+                  - test-app.default.svc.cluster.local:2112
+      loki:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:3500
+        use_incoming_timestamp: true
+    
+    processors:
+      batch:
+    
+    exporters:
+      otlp:
+        endpoint: "api.honeycomb.io:443" # US instance
+        #endpoint: "api.eu1.honeycomb.io:443" # EU instance
+        headers:
+          "x-honeycomb-team": "${file:/secrets/honeycomb-token}"
+      otlp/metrics:
+        endpoint: "api.honeycomb.io:443" # US instance
+        #endpoint: "api.eu1.honeycomb.io:443" # EU instance
+        headers:
+          "x-honeycomb-team": "${file:/secrets/honeycomb-token}"
+          "x-honeycomb-dataset": "cicd-observability-github-actions"
+    
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp]
+        metrics:
+          receivers: [otlp,prometheus]
+          processors: [batch]
+          exporters: [otlp/metrics]
+        logs:
+          receivers: [otlp,loki]
+          processors: [batch]
+          exporters: [otlp]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  ports:
+    - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
+      port: 4317
+      protocol: TCP
+      targetPort: 4317
+    - name: otlp-http # Default endpoint for OpenTelemetry HTTP receiver.
+      port: 4318
+      protocol: TCP
+      targetPort: 4318
+    - name: loki-http # Default endpoint for OpenTelemetry Promtail http receiver.
+      port: 3500
+      protocol: TCP
+      targetPort: 3500
+    - name: metrics # Default endpoint for querying metrics.
+      port: 8888
+  selector:
+    component: otel-collector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-collector
+  minReadySeconds: 5
+  progressDeadlineSeconds: 120
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+        component: otel-collector
+    spec:
+      containers:
+        - args:
+            - "--config=/conf/otel-collector-config.yaml"
+          image: otel/opentelemetry-collector-contrib:latest
+          name: otel-collector
+          resources:
+            limits:
+              cpu: 1
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 400Mi
+          ports:
+            - containerPort: 55679 # Default endpoint for ZPages.
+            - containerPort: 4317 # Default endpoint for OpenTelemetry receiver.
+            - containerPort: 8888  # Default endpoint for querying metrics.
+          env:
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: GOMEMLIMIT
+              value: 1600MiB
+          volumeMounts:
+            - name: otel-collector-config-vol
+              mountPath: /conf
+            - name: otel-collector-secrets
+              mountPath: /secrets
+      volumes:
+        - name: otel-collector-config-vol
+          configMap:
+            name: otel-collector-conf
+            items:
+              - key: otel-collector-config
+                path: otel-collector-config.yaml
+
+        - name: otel-collector-secrets
+          secret:
+            secretName: otel-collector-secrets
+            items:
+              - key: honeycomb-token
+                path: honeycomb-token

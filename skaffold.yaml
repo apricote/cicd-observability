@@ -2,10 +2,17 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: cicd-observability
-manifests:
-  rawYaml:
-    - deploy
+
 build:
   artifacts:
     - image: test-app
       ko: {}
+
+manifests:
+  rawYaml:
+    - ./deploy/test-app.yaml
+    - ./deploy/otel-collector.yaml
+    - ./deploy/promtail.yaml
+
+deploy:
+  kubectl: {}
